@@ -15,6 +15,8 @@ use HTTP::Request::Common qw(POST);
 use HTTP::Request::Common qw(GET);
 use URI::URL;
 use IO::Socket::INET;
+use threads;
+use Scalar::Util;
 my $ua = LWP::UserAgent->new;
 $ua->timeout(10);
 
@@ -71,6 +73,7 @@ print item('1'),"Yes\n";
 print item('2'),"No\n";
 print item('-'),"Choose : ";
 
+
 $number=<STDIN>;
 chomp $number;}
 if($number eq '1')
@@ -104,16 +107,28 @@ open (THETARGET, "<$list") || die "[-] Can't open the list websites file";
 close THETARGET;
 $link=$#TARGETS + 1;
 
+print item(),"Enter the number of threads: ";
+
+$thdsnum=<STDIN>;
+chomp $thdsnum;
+
 banner();
 print color("bold white"), "[+] Total sites : ";
 print color("bold red"), "".scalar(@TARGETS)."\n\n\n";
 print color('reset');
 
+
+
 OUTER: foreach $site(@TARGETS){
 chomp($site);
 $a++;
-cms();
+push(@threads, threads->create (\&cms, $site));
+sleep(1) while(scalar threads->list(threads::running) >= $thdsnum);
 }
+eval {
+$_->join foreach @threads;
+@threads = ();
+};
 
 ################ CMS DETCTER #####################
 sub cms(){
